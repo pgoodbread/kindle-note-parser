@@ -4,6 +4,11 @@
   "description": "CLI to parse Amazon Kindles clippings.txt into multiple Files",
   "license": "MIT",
   "repository": "pgoodbread/kindle-note-parser",
+  "main": "src/index.js",
+  "author": "Philip Gutbrodt",
+  "bin": {
+    "kparse": "bin/kindle-note-parser.js"
+  },
   "keywords": [
     "kindle",
     "amazon",
