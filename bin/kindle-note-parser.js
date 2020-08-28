@@ -17,16 +17,28 @@ const authors = [];
 highlights.map((note) => {
   let lines = note.split("\n");
 
-  // match for bracket content at end of the line
-  let author = lines[0].match(/\(([\w\s,\. ]+)\)$/)[1]
 
-  if(!authors.includes(author)) {
-    authors.push(author)
+  // ----- AUTHORS -----
+  // match for bracket content at end of the line
+  let authorMatches = lines[0].match(/\(([\w\s,\. ]+)\)$/)
+
+  // If there are matches, add the author 
+  if(authorMatches !== null && authorMatches.length > 0) {
+    let author = authorMatches[1]
+    // Add Author, if not yet added and if it doesnt contain "Edition", because then it's not really an author
+    if (!authors.includes(author) && !author.toLowerCase().includes('edition')) {
+      authors.push(author);
+    }
   }
+
+  // ----- TITLES -----
+  // match everything that is followed by what has been identified as author
+  let titleMatches = lines[0].match(/.+(?=\([\w\s,. ]+\)$)/)
+
 })
 
 
-highlights.map((el) => {
+authors.map((el) => {
   console.log(el)
   console.log("-------------")
 });
