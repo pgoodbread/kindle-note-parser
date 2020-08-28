@@ -34,11 +34,16 @@ highlights.map((note) => {
   processedHighlights[noteHash] = {}
   processedHighlights[noteHash]['author'] = extractAuthor(titleAuthorLine)
   processedHighlights[noteHash]['title'] = extractTitle(titleAuthorLine)
+  processedHighlights[noteHash]["filename"] = generateFilename(
+    processedHighlights[noteHash]["author"],
+    processedHighlights[noteHash]["title"]
+  );
   processedHighlights[noteHash]['notes'] = []
 
+
+  
+
 })
-
-
 
 //go through each note and add note data to correct hash (title and author)
 highlights.map((note) => {
@@ -53,19 +58,31 @@ highlights.map((note) => {
   let noteData = {}
   let positionDateLine = lines[1]
 
-  noteDate.page = extractPage(positionDateLine)
+  noteData.page = extractPage(positionDateLine)
 
-  // --- POSITION ---
-  let positionInfo = positionDateLine.match(/\d+-\d+/)[0].split('-')
-  noteData.startPosition = positionInfo[0]
-  noteData.endPosition = positionInfo[1]
+  noteData.startPosition = extractPosition(positionDateLine, 'start')
+  noteData.endPosition = extractPosition(positionDateLine, 'end')
+
+  noteData.content = lines[3]
 
   processedHighlights[noteHash]['notes'].push(noteData)
 
 })
 
+Object.keys(processedHighlights).map((key) => {
 
-console.log('processedHighlights', processedHighlights["762f161e865fed77203d191cfb9e9d6f1765484c"].notes)
+  // Sort Notes according to startPosition ASC
+  processedHighlights[key].notes.sort((a, b) => {
+    return a.startPosition - b.startPosition
+  })
+
+
+  // fs.writeFile()
+})
+
+
+
+console.log('processedHighlights', processedHighlights)
 
 function createHash(line) {
   //create unique hash for book title and author
@@ -77,9 +94,7 @@ function createHash(line) {
 
 // ----- TITLES -----
 function extractTitle(line) {
-
-  let title = 'unknown'
-
+  let title = 'unknown Title'
 
   // match everything that is followed by what has been identified as author
   let titleMatches = line.match(/.+(?=\([\w\s,. ]+\)$)/)
@@ -94,7 +109,7 @@ function extractTitle(line) {
 
 // ----- AUTHOR -----
 function extractAuthor(line) {
-  let author = 'unknown'
+  let author = 'unknown Author'
 
   // match for bracket content at end of the line
   let authorMatches = line.match(/\(([\w\s,\. ]+)\)$/)
@@ -113,7 +128,7 @@ function extractAuthor(line) {
 
 // --- PAGE ---
 function extractPage(line) {
-  let page = "unknown"
+  let page = ""
   
   // if more than one pipe-character ("|") is present, extract and set the page
   if(line.match(/\|/g).length > 1) {
@@ -121,4 +136,28 @@ function extractPage(line) {
   }
 
   return page 
+}
+
+// --- POSITION ---
+function extractPosition(line, type) {
+  let position = 'unknown'
+
+  let positionInfo = line.match(/\d+-\d+/)[0].split("-").map(Number)
+
+  if(type === 'end') {
+    position = positionInfo[1]
+  } else {
+    position = positionInfo[0]
+  }
+  return position
+}
+
+// --- FILENAME ---
+function generateFilename(author, title){
+
+    return author.replace(/[,:/]/g, "").replace(/ /g, "_") +
+    '-' +
+    title.replace(/[,:/]/g, "").replace(/ /g, "_") +
+    'md'
+
 }
