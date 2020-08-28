@@ -1,45 +1,40 @@
 #!/usr/bin/env node
 
 const add = require('../src/index')
+const crypto = require("crypto")
 
-const crypto = require("crypto");
 
+const fs = require("fs")
+const file = process.argv[2]
+const outputDir = process.argv[3]
 
-const fs = require("fs");
-const file = process.argv[2];
-const outputDir = process.argv[3];
+const fileContents = fs.readFileSync(file, "utf-8")
+const highlights = fileContents.split("==========\n")
 
-const fileContents = fs.readFileSync(file, "utf-8");
-const highlights = fileContents.split("==========\n");
+highlights.pop()
 
-highlights.pop();
+const authors = []
+const titles = []
 
-const authors = []; 
-const titles = [];
-
-const processedHighlights = {};
+const processedHighlights = {}
 
 // go through each highlight, and curate authors and titles
 highlights.map((note) => {
-  let lines = note.split("\n");
+  let lines = note.split("\n")
 
-  let titleAuthorLine = lines[0].trim();
+  let titleAuthorLine = lines[0].trim()
 
-  //create unique hash for book title and author
-  let shasum = crypto.createHash("sha1");
-  shasum.update(titleAuthorLine);
-
-  let titleAuthorHash = shasum.digest("hex");
+  let noteHash = createHash(titleAuthorLine)
 
   // if hash already exists, skip this highlight
-  if(processedHighlights.hasOwnProperty(titleAuthorHash)) {
+  if(processedHighlights.hasOwnProperty(noteHash)) {
     return
   } 
 
-  processedHighlights[titleAuthorHash] = {};
-  processedHighlights[titleAuthorHash]['author'] = extractAuthor(titleAuthorLine);
-  processedHighlights[titleAuthorHash]['title'] = extractTitle(titleAuthorLine);
-  processedHighlights[titleAuthorHash]['notes'] = [];
+  processedHighlights[noteHash] = {}
+  processedHighlights[noteHash]['author'] = extractAuthor(titleAuthorLine)
+  processedHighlights[noteHash]['title'] = extractTitle(titleAuthorLine)
+  processedHighlights[noteHash]['notes'] = []
 
 })
 
@@ -48,34 +43,37 @@ highlights.map((note) => {
 //go through each note and add note data to correct hash (title and author)
 highlights.map((note) => {
 
-  let lines = note.split("\n");
+  let lines = note.split("\n")
 
+  let titleAuthorLine = lines[0].trim()
+
+  let noteHash = createHash(titleAuthorLine)
 
   // ----- NOTES -----
   let noteData = {}
   let positionDateLine = lines[1]
 
-  // --- PAGE ---
-  // check if a page is given
-  let hasPageInfo = positionDateLine.match(/\|/g).length > 1
-  let page = 'unknown';
-
-  if(hasPageInfo) {
-    let page = positionDateLine.match(/\d+/g)[0]
-    noteData.page = page
-  }
+  noteDate.page = extractPage(positionDateLine)
 
   // --- POSITION ---
-  let positionInfo = positionDateLine.match(/\d+-\d+/)[0].split('-');
+  let positionInfo = positionDateLine.match(/\d+-\d+/)[0].split('-')
   noteData.startPosition = positionInfo[0]
   noteData.endPosition = positionInfo[1]
 
-  processedHighlights[titleAuthorHash]["notes"] = noteData
+  processedHighlights[noteHash]['notes'].push(noteData)
 
 })
 
 
-console.log('processedHighlights', processedHighlights)
+console.log('processedHighlights', processedHighlights["762f161e865fed77203d191cfb9e9d6f1765484c"].notes)
+
+function createHash(line) {
+  //create unique hash for book title and author
+  let shasum = crypto.createHash("sha1")
+  shasum.update(line)
+
+  return shasum.digest("hex")
+}
 
 // ----- TITLES -----
 function extractTitle(line) {
@@ -96,8 +94,7 @@ function extractTitle(line) {
 
 // ----- AUTHOR -----
 function extractAuthor(line) {
-
-  let author = 'unknown';
+  let author = 'unknown'
 
   // match for bracket content at end of the line
   let authorMatches = line.match(/\(([\w\s,\. ]+)\)$/)
@@ -109,7 +106,19 @@ function extractAuthor(line) {
     !authorMatches[1].toLowerCase().includes("edition")
   ) {
       // The Author name without brackets is found in the first capture group
-      author = authorMatches[1];
+      author = authorMatches[1]
   }
   return author
+}
+
+// --- PAGE ---
+function extractPage(line) {
+  let page = "unknown"
+  
+  // if more than one pipe-character ("|") is present, extract and set the page
+  if(line.match(/\|/g).length > 1) {
+    page = line.match(/\d+/g)[0]
+  }
+
+  return page 
 }
