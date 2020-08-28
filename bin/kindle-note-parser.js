@@ -12,6 +12,7 @@ const highlights = fileContents.split("==========\n");
 highlights.pop();
 
 const authors = []; 
+const titles = [];
 
 // go through each highlight
 highlights.map((note) => {
@@ -35,10 +36,17 @@ highlights.map((note) => {
   // match everything that is followed by what has been identified as author
   let titleMatches = lines[0].match(/.+(?=\([\w\s,. ]+\)$)/)
 
+  if(titleMatches !== null && titleMatches.length > 0) {
+    let title = titleMatches[0].trim()
+    if(!titles.includes(title)) {
+      titles.push(title)
+    }
+  }
+
 })
 
 
-authors.map((el) => {
+titles.map((el) => {
   console.log(el)
   console.log("-------------")
 });
