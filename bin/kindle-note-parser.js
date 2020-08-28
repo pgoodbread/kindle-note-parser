@@ -2,6 +2,9 @@
 
 const add = require('../src/index')
 
+const crypto = require("crypto");
+
+
 const fs = require("fs");
 const file = process.argv[2];
 const outputDir = process.argv[3];
@@ -14,22 +17,37 @@ highlights.pop();
 const authors = []; 
 const titles = [];
 
+const processedHighlights = {};
+
 // go through each highlight
 highlights.map((note) => {
   let lines = note.split("\n");
 
+  let titleAuthorLine = lines[0].trim();
 
-  // ----- AUTHORS -----
+  //create unique hash
+  let shasum = crypto.createHash("sha1");
+  shasum.update(titleAuthorLine);
+
+  let titleAuthorHash = shasum.digest("hex");
+
+  processedHighlights[titleAuthorHash] = {};
+
+  // ----- AUTHOR -----
   // match for bracket content at end of the line
-  let authorMatches = lines[0].match(/\(([\w\s,\. ]+)\)$/)
+  let authorMatches = titleAuthorLine.match(/\(([\w\s,\. ]+)\)$/);
 
   // If there are matches, add the author 
   if(authorMatches !== null && authorMatches.length > 0) {
+
+    // The Author name without brackets is found in the first capture group
     let author = authorMatches[1]
+
     // Add Author, if not yet added and if it doesnt contain "Edition", because then it's not really an author
     if (!authors.includes(author) && !author.toLowerCase().includes('edition')) {
       authors.push(author);
     }
+
   }
 
   // ----- TITLES -----
