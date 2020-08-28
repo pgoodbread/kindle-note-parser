@@ -3,13 +3,14 @@
 const add = require('../src/index')
 const crypto = require("crypto")
 
-
 const fs = require("fs")
 const file = process.argv[2]
 const outputDir = process.argv[3]
 
 const fileContents = fs.readFileSync(file, "utf-8")
-const highlights = fileContents.split("==========\n")
+const highlights = fileContents.split("==========\r\n")
+console.log('highlights', highlights)
+
 
 highlights.pop()
 
@@ -20,7 +21,8 @@ const processedHighlights = {}
 
 // go through each highlight, and curate authors and titles
 highlights.map((note) => {
-  let lines = note.split("\n")
+  let lines = note.split("\r\n")
+  console.log(lines, lines[0], lines[1], lines[2])
 
   let titleAuthorLine = lines[0].trim()
 
@@ -34,14 +36,12 @@ highlights.map((note) => {
   processedHighlights[noteHash] = {}
   processedHighlights[noteHash]['author'] = extractAuthor(titleAuthorLine)
   processedHighlights[noteHash]['title'] = extractTitle(titleAuthorLine)
+  processedHighlights[noteHash]['notes'] = []
+
   processedHighlights[noteHash]["filename"] = generateFilename(
     processedHighlights[noteHash]["author"],
     processedHighlights[noteHash]["title"]
-  );
-  processedHighlights[noteHash]['notes'] = []
-
-
-  
+  )
 
 })
 
@@ -60,10 +60,15 @@ highlights.map((note) => {
 
   noteData.page = extractPage(positionDateLine)
 
-  noteData.startPosition = extractPosition(positionDateLine, 'start')
-  noteData.endPosition = extractPosition(positionDateLine, 'end')
+  // Skip bookmarks
+  if(extractPosition(positionDateLine).split("-").length === 1) {
+    return
+  }
 
-  noteData.content = lines[3]
+[noteData.startPosition, noteData.endPosition] = extractPosition(positionDateLine).split("-").map(Number);
+
+
+  noteData.content = lines[3].trim()
 
   processedHighlights[noteHash]['notes'].push(noteData)
 
@@ -71,18 +76,20 @@ highlights.map((note) => {
 
 Object.keys(processedHighlights).map((key) => {
 
-  // Sort Notes according to startPosition ASC
-  processedHighlights[key].notes.sort((a, b) => {
+  // Sort Notes according to startPosition ASC and generate markdown
+  let template = generateMetaMarkdown(processedHighlights[key])
+  
+  template += processedHighlights[key].notes.sort((a, b) => {
     return a.startPosition - b.startPosition
+  }).map(generateNoteMarkdown)
+
+  fs.writeFile("../test-output/" + processedHighlights[key].filename, template, (err) => {
+    if(err) {
+      return console.log(err)
+    }
+    console.log(processedHighlights[key].filename + ' written.')
   })
-
-
-  // fs.writeFile()
 })
-
-
-
-console.log('processedHighlights', processedHighlights)
 
 function createHash(line) {
   //create unique hash for book title and author
@@ -131,33 +138,62 @@ function extractPage(line) {
   let page = ""
   
   // if more than one pipe-character ("|") is present, extract and set the page
-  if(line.match(/\|/g).length > 1) {
-    page = line.match(/\d+/g)[0]
+  try{
+
+    if(line.match(/\|/g).length > 1) {
+      page = line.match(/\d+/g)[0]
+    }
+  } catch(e) {
+    console.log("ERROR", line)
   }
 
   return page 
 }
 
 // --- POSITION ---
-function extractPosition(line, type) {
+function extractPosition(line) {
   let position = 'unknown'
-
-  let positionInfo = line.match(/\d+-\d+/)[0].split("-").map(Number)
-
-  if(type === 'end') {
-    position = positionInfo[1]
-  } else {
-    position = positionInfo[0]
+  try{
+    if(line.match(/-/g).length < 2) {
+      position = line.match(/\d+/)[0]
+    } else {
+      position = line.match(/\d+-\d+/)[0]
+    }  
+  } catch(e) {
+    console.log("ERROR", line)
   }
+
   return position
 }
 
 // --- FILENAME ---
 function generateFilename(author, title){
 
-    return author.replace(/[,:/]/g, "").replace(/ /g, "_") +
-    '-' +
-    title.replace(/[,:/]/g, "").replace(/ /g, "_") +
-    'md'
+    return (
+      author.replace(/[,:\/\(\)\\]/g, "").replace(/ /g, "_") +
+      "-" +
+      title.replace(/[,:\/\(\)\\]/g, "").replace(/ /g, "_") +
+      ".md"
+    );
+}
 
+// --- TEMPLATE ---
+function generateMetaMarkdown(bookInfo) {
+  let markdown = ''
+
+  markdown += "# " + bookInfo.title + "\n\n"
+  markdown += "### " + bookInfo.author + "\n\n"
+  markdown += "_Position (Start) - Position (End):_ __Content__\n\n"
+
+  return markdown
+}
+
+function generateNoteMarkdown(note){
+
+  let markdown = ''
+
+  markdown += '_' + note.startPosition + ' - ' + note.endPosition + ':_'
+  markdown += ' __' + note.content + '__\n\n'
+
+  return markdown
 }
