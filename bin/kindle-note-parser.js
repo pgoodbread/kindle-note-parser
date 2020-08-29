@@ -7,10 +7,33 @@ const fs = require("fs")
 const file = process.argv[2]
 const outputDir = process.argv[3]
 
+if(process.argv.length !== 4) {
+  console.log('Aborted - Usage: \nkparse <input-file> <output-dir>')
+  process.exit(1)
+}
+
+try {
+  fs.accessSync(file, fs.constants.R_OK);
+} catch(e) {
+  console.log("Error: the file '" + file + "' is not readable");
+  process.exit(1);
+}
+
+if(!fs.existsSync(outputDir)) {
+  console.log('Error: output directory \'' + outputDir + '\' does not exist.')
+  process.exit(1)
+}
+
+try {
+  fs.accessSync(outputDir, fs.constants.W_OK);
+} catch (e) {
+  console.log("Error: the directory '" + outputDir + "' is not writable");
+  process.exit(1);
+}
+
+
 const fileContents = fs.readFileSync(file, "utf-8")
 const highlights = fileContents.split("==========\r\n")
-console.log('highlights', highlights)
-
 
 highlights.pop()
 
@@ -22,7 +45,6 @@ const processedHighlights = {}
 // go through each highlight, and curate authors and titles
 highlights.map((note) => {
   let lines = note.split("\r\n")
-  console.log(lines, lines[0], lines[1], lines[2])
 
   let titleAuthorLine = lines[0].trim()
 
@@ -83,7 +105,7 @@ Object.keys(processedHighlights).map((key) => {
     return a.startPosition - b.startPosition
   }).map(generateNoteMarkdown)
 
-  fs.writeFile("../test-output/" + processedHighlights[key].filename, template, (err) => {
+  fs.writeFile(outputDir + '/' + processedHighlights[key].filename, template, (err) => {
     if(err) {
       return console.log(err)
     }
@@ -139,7 +161,6 @@ function extractPage(line) {
   
   // if more than one pipe-character ("|") is present, extract and set the page
   try{
-
     if(line.match(/\|/g).length > 1) {
       page = line.match(/\d+/g)[0]
     }
@@ -170,9 +191,9 @@ function extractPosition(line) {
 function generateFilename(author, title){
 
     return (
-      author.replace(/[,:\/\(\)\\]/g, "").replace(/ /g, "_") +
+      author.replace(/[,:\/\(\)\\\.]/g, "").replace(/ /g, "_") +
       "-" +
-      title.replace(/[,:\/\(\)\\]/g, "").replace(/ /g, "_") +
+      title.replace(/[,:\/\(\)\\\.]/g, "").replace(/ /g, "_") +
       ".md"
     );
 }
