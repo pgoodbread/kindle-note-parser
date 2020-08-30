@@ -1,5 +1,7 @@
 # Kindle-Note-Parser
 
+[](	https://img.shields.io/github/license/pgoodbread/kindle-note-parser)
+
 Kindle-Note-Parser is a NodeJS CLI for splitting notes from your Amazon Kindle into separate files.
 
 ## Installation
