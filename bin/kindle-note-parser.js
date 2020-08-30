@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 
-const add = require('../src/index')
 const crypto = require("crypto")
-
 const fs = require("fs")
+
 const file = process.argv[2]
 const outputDir = process.argv[3]
 

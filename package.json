@@ -1,5 +1,5 @@
 {
-  "name": "@pgoodbread/kindle-note-parser",
+  "name": "kindle-note-parser",
   "version": "0.1.0",
   "description": "CLI to parse Amazon Kindles clippings.txt into multiple Files",
   "license": "MIT",
