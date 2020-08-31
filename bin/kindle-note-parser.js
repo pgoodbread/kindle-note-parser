@@ -36,9 +36,6 @@ const highlights = fileContents.split("==========\r\n")
 
 highlights.pop()
 
-const authors = []
-const titles = []
-
 const processedHighlights = {}
 
 // go through each highlight, and curate authors and titles
