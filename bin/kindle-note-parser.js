@@ -79,12 +79,12 @@ highlights.map((note) => {
   noteData.page = extractPage(positionDateLine)
 
   // Skip bookmarks
-  if(extractPosition(positionDateLine).split("-").length === 1) {
+  let positions = extractPosition(positionDateLine).split("-")
+  if(positions.length === 1) {
     return
   }
 
-[noteData.startPosition, noteData.endPosition] = extractPosition(positionDateLine).split("-").map(Number);
-
+[noteData.startPosition, noteData.endPosition] = positions.map(Number);
 
   noteData.content = lines[3].trim()
 
@@ -99,6 +99,8 @@ Object.keys(processedHighlights).map((key) => {
   
   template += processedHighlights[key].notes.sort((a, b) => {
     return a.startPosition - b.startPosition
+  }).filter((el) => {
+    
   }).map(generateNoteMarkdown)
 
   fs.writeFile(outputDir + '/' + processedHighlights[key].filename, template, (err) => {
