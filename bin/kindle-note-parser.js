@@ -97,11 +97,14 @@ Object.keys(processedHighlights).map((key) => {
   // Sort Notes according to startPosition ASC and generate markdown
   let template = generateMetaMarkdown(processedHighlights[key])
   
-  template += processedHighlights[key].notes.sort((a, b) => {
+  sortedNotes = processedHighlights[key].notes.sort((a, b) => {
     return a.startPosition - b.startPosition
-  }).filter((el) => {
-    
-  }).map(generateNoteMarkdown)
+  })
+
+  // Filter out the duplicates
+  let uniqueNotes = removeDuplicates(sortedNotes)
+
+  template += uniqueNotes.map(generateNoteMarkdown)
 
   fs.writeFile(outputDir + '/' + processedHighlights[key].filename, template, (err) => {
     if(err) {
@@ -110,6 +113,32 @@ Object.keys(processedHighlights).map((key) => {
     console.log(processedHighlights[key].filename + ' written.')
   })
 })
+
+function removeDuplicates(notes) {
+  // get existing startNote values
+  let startPositions = notes.map((note) => note.startPosition);
+  let uniqueStartPositions = [...new Set(startPositions)];
+  
+  // loop through values, get all objects with values
+  let uniqueNotes = uniqueStartPositions.map(position => {
+    let filteredNotesByPosition = notes.filter((note) => note.startPosition === position)
+
+    if(filteredNotesByPosition.length === 1) { return filteredNotesByPosition[0] }
+
+    // get the note with the largest endPosition, if its similar, take the longest note
+    return filteredNotesByPosition.reduce((prev, current) => {
+      if(prev.endPosition > current.endPosition) {
+        return prev
+      } else if (prev.endPosition < current.endPosition) {
+        return current
+      } else if (prev.endPosition === current.endPosition) {
+        return prev.content.length > current.content.length ? prev : current
+      }
+    })
+  })
+
+  return uniqueNotes
+}
 
 function createHash(line) {
   //create unique hash for book title and author
