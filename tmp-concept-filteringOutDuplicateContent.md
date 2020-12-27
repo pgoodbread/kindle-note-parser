@@ -9,5 +9,5 @@
 ## idea
 
 - get all elements with same start position (how?)
-- take element with highest start position
+- take element with highest end position
 - disregard other elements
